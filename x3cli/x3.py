@@ -1,3 +1,4 @@
+import logging
 import functools
 import getpass
 import json
@@ -9,6 +10,7 @@ from typing import Dict
 from appdirs import user_data_dir
 from requests_html import HTMLSession
 
+logger = logging.getLogger(__name__)
 save_dir = Path(user_data_dir(appname="x3cli"))
 save_dir.mkdir(exist_ok=True)
 CACHE = Path(save_dir) / "cache.pkl"
@@ -29,14 +31,17 @@ def login_required(func):
         if not all([self.employee_id, self.secure, "NODUMXEBIAURENBOEKEN3" in self.session.cookies]):
             self.set_from_cache()
         if self.is_authenticated():
-            print("You are already logged in")
+            logger.debug("You are already logged in")
         else:
-            print("Removing cache")
+            logger.debug("Removing cache")
             CACHE.unlink(missing_ok=True)
-            username = input("Username: ")
+            hint = f" ({self.username})" if self.username else ""
+            username_input = input(f"Username{hint}: ")
+            if username_input:
+                self.username = username_input
             password = getpass.getpass()
-            print(f"Logging you in as {username}")
-            self.login(username=username, password=password)
+            logger.debug(f"Logging you in as {self.username}")
+            self.login(username=self.username, password=password)
         result = func(self, *args, **kwargs)
         return result
     return wrapper
@@ -47,6 +52,7 @@ class X3:
         self.session = HTMLSession()
         self.session.headers.update(DEFAULT_HEADERS)
         self.employee_id = None
+        self.username = None
         self.name = None
         self.secure = None
         self._is_authenticated = False
@@ -61,8 +67,10 @@ class X3:
                 for prefix
                 in ["sts.afasonline.com", "idp.afasonline.com"]
             ]):  # We are redirected to the login page, so we are logged in
+                logger.debug("Can't get data, not logged in")
                 self._is_authenticated = False
             else:
+                logger.debug("You can login!")
                 self._is_authenticated = True
         return self._is_authenticated
 
@@ -70,7 +78,7 @@ class X3:
         if CACHE.exists():
             with open(CACHE, "rb") as f:
                 cache = pickle.load(f)
-                print(f"Setting attributes {cache.keys()} from cache")
+                logger.debug(f"Setting attributes {cache.keys()} from cache")
                 for attr, value in cache.items():
                     # if "." in attr:  # for setting session.cookies
                     #     attr, subattr = attr.split(".")
@@ -165,13 +173,14 @@ class X3:
             self.secure = employee['secure']
             self.employee_id = employee['id']
 
-        print("You should be logged in!")
+        logger.debug("You should be logged in!")
 
         # TODO: Validate this
         cache = {
             "employee_id": self.employee_id,
             "secure": self.secure,
             "session": self.session,
+            "username": self.username,
         }
         self.save_to_cache(cache)
 
@@ -185,7 +194,7 @@ class X3:
         }
 
         response = self.session.post("https://x3.nodum.io/json/geldig", params=params)
-        print(response, response.url)
+        logger.debug(response, response.url)
         response.raise_for_status()
         if response.json() is None:
             raise ValueError("json response is None")
@@ -206,6 +215,8 @@ class X3:
 
         response = self.session.post("https://x3.nodum.io/json/illness", params=params)
         response.raise_for_status()
+        if response.json() is None:
+            raise ValueError("json response is None")
         if response.text == "":
             raise ValueError("Response is empty")
         return response.json()
@@ -227,6 +238,8 @@ class X3:
         )
         response.raise_for_status()
 
+        if response.json() is None:
+            raise ValueError("json response is None")
         if response.text == "":
             raise ValueError("Response is empty")
 
