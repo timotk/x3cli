@@ -1,17 +1,15 @@
+import argparse
 import calendar
 from datetime import date, timedelta
-import argparse
 from typing import Dict
 
 import pandas as pd
-from workalendar.europe import Netherlands
 from rich import print
 from rich.console import Console
 from rich.table import Table
-
+from workalendar.europe import Netherlands
 
 from x3cli.x3 import X3
-
 
 console = Console()
 
@@ -65,11 +63,13 @@ def add_missing_working_days(df: pd.DataFrame, year: int, month: int) -> pd.Data
 def create_df(lines: Dict, geldig: Dict, *, year: int, month: int):
     projects_df = pd.DataFrame.from_dict(geldig["projects"]).drop("wsts", axis=1)
     hours_df = pd.DataFrame.from_dict(lines)
-    df = (
-        hours_df.merge(projects_df, left_on="project", right_on="code")
-        .drop("project", axis=1)
-        .rename(columns={"name": "project"})
-    )
+    df = hours_df.merge(
+        projects_df, left_on="project", right_on="code", how="left"
+    )  # Left merge so holidays remain
+
+    df.loc[df["project"] == "VBZ", "name"] = "Holiday"
+    df = df.drop("project", axis=1)
+    df = df.rename(columns={"name": "project"})
 
     df["date"] = pd.to_datetime(df[["year", "month", "day"]])
     df["date"] = df["date"].dt.date
@@ -77,25 +77,32 @@ def create_df(lines: Dict, geldig: Dict, *, year: int, month: int):
     df = add_missing_working_days(df, year=year, month=month)
 
     df["weekday"] = pd.to_datetime(df["date"]).dt.day_name()
-
     return df
 
 
 def summary(df: pd.DataFrame, scheduled_hours: int):
     _summary = (
-        df.groupby("project")["time"].sum().sort_values(ascending=False).astype(int).reset_index()
+        df.groupby("project")["time"]
+        .sum()
+        .sort_values(ascending=False)
+        .astype(int)
+        .reset_index()
     )
 
     _summary = _summary.append(
-        pd.DataFrame({"project": ["Total"], "time": f"{int(_summary['time'].sum())}/{scheduled_hours}"})
+        pd.DataFrame(
+            {
+                "project": ["Total"],
+                "time": f"{int(_summary['time'].sum())}/{scheduled_hours}",
+            }
+        )
     )
     return _summary
 
 
 def hours(df: pd.DataFrame, scheduled_hours: int) -> pd.DataFrame:
     df = df[["weekday", "date", "project", "time"]].copy()
-    total = df['time'].sum().astype(int)
-    df['time'] = df['time'].round(0).fillna("_").astype(str)
+    total = df["time"].sum().astype(int)
     total_row = pd.DataFrame(
         {
             "date": [""],
@@ -105,7 +112,6 @@ def hours(df: pd.DataFrame, scheduled_hours: int) -> pd.DataFrame:
     )
 
     df = df.append(total_row)
-
     return df
 
 
