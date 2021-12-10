@@ -5,12 +5,13 @@ A command line interface for [X3](https://x3.nodum.io).
 ```sh
 git clone git@github.com:timotk/x3cli.git
 cd x3cli
-pip install --user .
+pip install --user --prefer-binary .
 ```
 
 # Usage
+Simply run it using `x3` on the command line:
 ```sh
-python x3cli/cli.py
+$ x3
 Loading...
 Username: timouelen@godatadriven.com
 Password:
@@ -28,4 +29,9 @@ Summary:
 │     Idle │      8  │
 │    Total │ 176/176 │
 └──────────┴─────────┘
+```
+
+You can also be more specific:
+```sh
+x3 -y 2022 -m 1
 ```

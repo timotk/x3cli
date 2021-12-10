@@ -20,6 +20,10 @@ isort = "^5.10.1"
 pytest = "^6.2.5"
 jupyterlab = "^3.2.4"
 altair = "^4.1.0"
+pre-commit = "^2.16.0"
+
+[tool.poetry.scripts]
+x3 = "x3cli.cli:main"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
