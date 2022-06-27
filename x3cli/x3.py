@@ -100,7 +100,6 @@ class X3:
         if not insite_response.url.startswith("https://idp.afasonline.com"):
             raise ValueError(f"Insite did not redirect to idp.afasonline.com. Actual url: {insite_response.url}")
 
-
         # Grab csrf_token from javascript
         csrf_token = insite_response.html.find("script")[0].text.split('"')[1]
 
@@ -133,7 +132,7 @@ class X3:
             authentication_code = input("Input your 2FA code: ")
 
             data = {
-                "Method": "SMS",  # TODO: Deal with 2FA code via app
+                "Method": "GenericTotp",
                 "TwoFactorKey": "",
                 "Code": authentication_code,
                 "__RequestVerificationToken": csrf_token,
