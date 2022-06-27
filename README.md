@@ -35,3 +35,7 @@ You can also be more specific:
 ```sh
 x3 -y 2022 -m 1
 ```
+
+# Security notice
+After logging in, your session will be stored on disk.
+When the login expires, you will be asked for your credentials again.
