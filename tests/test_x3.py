@@ -4,41 +4,55 @@ from x3cli.x3 import X3
 
 
 @pytest.fixture()
-def x3():
+def x3(mocker):
     _x3 = X3()
+    mocker.patch.object(_x3, 'is_authenticated', return_value=True)
     return _x3
 
 
-def test_x3_login():
-    x3 = X3()
-    assert False
+def test_x3_login(x3):
+    # Login is mocked!
+    assert x3.is_authenticated()
 
 
-def test_x3_geldig(x3):
-    expected_keys = {
-        "allowApproveMonth",
-        "lastApproved",
-        "monthIsApproved",
-        "projects",
-        "scheduleHours",
-    }
+def test_x3_geldig_multiple_projects(requests_mock, x3):
+    expected_dict = {'projects': ["project1", "project2"],
+                     "allowApproveMonth": [],
+                     "lastApproved": [],
+                     "monthIsApproved": [],
+                     "scheduleHours": []}
 
-    json = x3.geldig(year=2021, month=11)
+    requests_mock.post("https://x3.nodum.io/json/geldig", json=expected_dict)
 
-    assert json.keys() == expected_keys
-    assert len(json["projects"]) > 1  # when not logged in, you only get one
-
-
-def test_x3_illness(x3):
-    expected_keys = {"currentIllness", "nextIllness"}
-
-    json = x3.illness(year=2021, month=11)
-
-    assert json.keys() == expected_keys
+    # Json is returned as-is.
+    actual_dict = x3.geldig(year=2021, month=11)
+    assert actual_dict == expected_dict
 
 
-def test_x3_lines(x3):
-    year = 2021
-    month = 11
-    lines = x3.lines(year=year, month=month)
-    assert len(lines) > 0, f"No lines found, are you sure you have hours for year {year} and month {month}?"
+def test_x3_geldig_single_project(requests_mock, x3):
+    """One project is an indicator you are not logged-in, somehow.
+    """
+    requests_mock.post("https://x3.nodum.io/json/geldig", json={'projects': ["single-project"]})
+
+    with pytest.raises(ValueError) as e:
+        x3.geldig(year=2021, month=11)
+        assert str(e) == "Only one project found, you are not logged in"
+
+
+def test_x3_illness(requests_mock, x3):
+    expected_dict = {"currentIllness": [], "nextIllness": []}
+    requests_mock.post("https://x3.nodum.io/json/illness", json=expected_dict)
+
+    # Json is returned as-is.
+    actual_dict = x3.illness(year=2021, month=11)
+
+    assert actual_dict == expected_dict
+
+
+def test_x3_lines(requests_mock, x3):
+    expected_dict = {"??": [], "!!": []}
+    requests_mock.post("https://x3.nodum.io/json/fetchlines", json=expected_dict)
+
+    lines = x3.lines(year=2021, month=11)
+
+    assert lines == expected_dict

@@ -21,6 +21,8 @@ pytest = "^6.2.5"
 jupyterlab = "^3.2.4"
 altair = "^4.1.0"
 pre-commit = "^2.16.0"
+pytest-mock = "^3.8.2"
+requests-mock = "^1.9.3"
 
 [tool.poetry.scripts]
 x3 = "x3cli.cli:main"
