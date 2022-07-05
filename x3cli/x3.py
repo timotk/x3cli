@@ -136,8 +136,8 @@ class X3:
                 "TwoFactorKey": "",
                 "Code": authentication_code,
                 "__RequestVerificationToken": csrf_token,
-                "TrustedDevice": False,
-
+                # UI has a checkbox: Trust Device for 7 days.
+                "TrustedDevice": True,
             }
             two_factor_response = self.session.post(login_response.url, data=data)
             two_factor_response.raise_for_status()
