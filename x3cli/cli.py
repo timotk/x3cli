@@ -63,6 +63,8 @@ def add_missing_working_days(df: pd.DataFrame, year: int, month: int) -> pd.Data
 def create_df(lines: Dict, geldig: Dict, *, year: int, month: int):
     projects_df = pd.DataFrame.from_dict(geldig["projects"]).drop("wsts", axis=1)
     hours_df = pd.DataFrame.from_dict(lines)
+    if hours_df.empty:  # If no hours were written yet, an empty DataFrame is created. We need the columns to exist.
+        hours_df = pd.DataFrame(columns=["_id", "day", "month", "year", "employee", "project", "wst", "desc", "time", "created", "approved"], dtype=str)
     df = hours_df.merge(
         projects_df, left_on="project", right_on="code", how="left"
     )  # Left merge so holidays remain
@@ -102,7 +104,7 @@ def summary(df: pd.DataFrame, scheduled_hours: int):
 
 def hours(df: pd.DataFrame, scheduled_hours: int) -> pd.DataFrame:
     df = df[["weekday", "date", "project", "time"]].copy()
-    total = df["time"].sum().astype(int)
+    total = df["time"].fillna(0).sum().astype(int)
     total_row = pd.DataFrame(
         {
             "date": [""],
