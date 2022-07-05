@@ -103,7 +103,7 @@ def summary(df: pd.DataFrame, scheduled_hours: int):
 
 
 def hours(df: pd.DataFrame, scheduled_hours: int) -> pd.DataFrame:
-    df = df[["weekday", "date", "project", "time"]].copy()
+    df = df[["weekday", "date", "project", "desc", "time"]].copy()
     total = df["time"].fillna(0).sum().astype(int)
     total_row = pd.DataFrame(
         {

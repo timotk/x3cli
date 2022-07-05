@@ -136,13 +136,13 @@ class X3:
                 "TwoFactorKey": "",
                 "Code": authentication_code,
                 "__RequestVerificationToken": csrf_token,
-                "TrustedDevice": False,
-
+                # UI has a checkbox: Trust Device for 7 days.
+                "TrustedDevice": True,
             }
             two_factor_response = self.session.post(login_response.url, data=data)
             two_factor_response.raise_for_status()
             if not two_factor_response.url.startswith("https://x3.nodum.io"):
-                raise ValueError(f"Did not redirect to x3.nodum.io. Actual url {two_factor_response.url}")
+                raise ValueError(f"Did not redirect to x3.nodum.io. Actual url {two_factor_response.url}, did you enter the correct 2FA code?")
 
             # Our headers need to pass the X3 cookie
             # We get the cookie by doing a requests to X3 first, then updating the header
